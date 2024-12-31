@@ -1,13 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import {
-    Alert, Button, FlatList,
-    Image, StyleSheet, Text, TextInput,
-    View
-} from 'react-native';
+import { Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function Characters() {
+export default function Characters({ navigation }) {
   const [name, setName] = useState('');
   const [image, setImage] = useState(null);
   const [characters, setCharacters] = useState([]);
@@ -94,12 +90,17 @@ export default function Characters() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.characterCard}>
-            <Text>{item.name}</Text>
-            {item.image && <Image source={{ uri: item.image }} style={styles.image} />}
-            <Button title="X" onPress={() => handleDeleteCharacter(item.id)} />
+            <Text style={styles.characterName}>{item.name}</Text>
+            {item.image && <Image source={{ uri: item.image }} style={styles.characterImage} />}
+            <Button title="Delete" onPress={() => handleDeleteCharacter(item.id)} />
           </View>
         )}
       />
+
+      {/* Return Button */}
+      <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.returnButtonText}>Return</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -107,32 +108,70 @@ export default function Characters() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 20,
+    color: '#333',
+    marginBottom: 15,
   },
   input: {
+    width: '100%',
+    height: 40,
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    paddingLeft: 10,
+    marginBottom: 20,
   },
   image: {
     width: 100,
     height: 100,
-    marginVertical: 10,
     borderRadius: 10,
+    marginVertical: 10,
   },
   characterCard: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
+    width: '100%',
+    padding: 15,
+    marginVertical: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+    alignItems: 'center',
+  },
+  characterName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 10,
+  },
+  characterImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  returnButton: {
+    marginTop: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#008CBA',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  returnButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

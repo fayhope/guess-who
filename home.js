@@ -1,22 +1,72 @@
 import React from 'react';
-import { Button, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Home({ navigation }) {
   return (
-    <View>
-      <Text>Guess Who - Your Friends Edition!</Text>
-      <Button
-        title="Go to Characters"
+    <View style={styles.container}>
+      <Text style={styles.title}>Guess Who - Your Friends Edition!</Text>
+      <TouchableOpacity 
+        style={[styles.button, styles.goToCharactersButton]}
         onPress={() => navigation.navigate('Characters')}
-      />
-      <Button
-        title="New Game"
+      >
+        <Text style={styles.buttonText}>Go to Characters</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.button, styles.newGameButton]}
         onPress={() => navigation.navigate('CreateGameScreen')}
-      />
-      <Button
-        title="Join Game"
+      >
+        <Text style={styles.buttonText}>New Game</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.button, styles.joinGameButton]}
         onPress={() => navigation.navigate('JoinGame')}
-      />
+      >
+        <Text style={styles.buttonText}>Join Game</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f7f7f7',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+    color: '#333',
+  },
+  button: {
+    width: '80%',
+    paddingVertical: 15,
+    marginVertical: 10,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  buttonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  goToCharactersButton: {
+    backgroundColor: '#4CAF50', // Green
+  },
+  newGameButton: {
+    backgroundColor: '#008CBA', // Blue
+  },
+  joinGameButton: {
+    backgroundColor: '#f44336', // Red
+  },
+});
