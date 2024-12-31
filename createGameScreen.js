@@ -73,26 +73,18 @@ export default function CreateGameScreen({ navigation }) {
         <Text style={styles.infoText}>Creating game...</Text>
       )}
 
-      {/* Button to choose characters */}
       <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
         <Text style={styles.buttonText}>Choose Characters</Text>
       </TouchableOpacity>
-
-      {/* Selected Characters */}
-      <Text style={styles.infoText}>
-        Selected Characters: {selectedCharacters.join(', ')}
-      </Text>
-
-      {/* Return Button */}
+  
       <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
         <Text style={styles.returnButtonText}>Return</Text>
       </TouchableOpacity>
 
-      {/* Character Selection Modal */}
       <CharacterSelectionModal
         visible={modalVisible}
         onClose={handleCloseModal}
-        characters={characters}  // Pass loaded characters to modal
+        characters={characters}  
         onSelectCharacter={handleSelectCharacters}
       />
     </View>

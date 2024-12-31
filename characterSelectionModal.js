@@ -7,13 +7,13 @@ export default function CharacterSelectionModal({ visible, onClose, characters, 
   const handleSelect = (characterId) => {
     setSelectedCharacters((prevSelected) =>
       prevSelected.includes(characterId)
-        ? prevSelected.filter((id) => id !== characterId)
-        : [...prevSelected, characterId]
+        ? prevSelected.filter((id) => id !== characterId) // Deselect if already selected
+        : [...prevSelected, characterId] // Select if not already selected
     );
   };
 
   const handleSave = () => {
-    onSelectCharacter(selectedCharacters); // pass selected characters to parent component
+    onSelectCharacter(selectedCharacters); // Pass selected characters to parent component
     onClose();
   };
 
@@ -26,18 +26,14 @@ export default function CharacterSelectionModal({ visible, onClose, characters, 
             data={characters}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={styles.characterItem}>
-                <Text style={styles.characterName}>{item.name}</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.selectButton,
-                    selectedCharacters.includes(item.id) && styles.selectedButton, // Change button style if selected
-                  ]}
-                  onPress={() => handleSelect(item.id)}
-                >
-                  <Text style={styles.selectButtonText}>
-                    {selectedCharacters.includes(item.id) ? 'Deselect' : 'Select'}
-                  </Text>
+              <View
+                style={[
+                  styles.characterItem,
+                  selectedCharacters.includes(item.id) && styles.selectedCharacter, // Change row color if selected
+                ]}
+              >
+                <TouchableOpacity onPress={() => handleSelect(item.id)}>
+                  <Text style={styles.characterName}>{item.name}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -79,22 +75,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8, // Optional for rounded corners
   },
   characterName: {
     fontSize: 16,
   },
-  selectButton: {
-    backgroundColor: '#008CBA',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
-  selectedButton: {
-    backgroundColor: '#4CAF50', // Green for selected state
-  },
-  selectButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  selectedCharacter: {
+    backgroundColor: "#eeeee4", 
   },
   buttonContainer: {
     flexDirection: 'row',

@@ -6,19 +6,19 @@ export default function Home({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.title}>Guess Who - Your Friends Edition!</Text>
       <TouchableOpacity 
-        style={[styles.button, styles.goToCharactersButton]}
+        style={styles.button}
         onPress={() => navigation.navigate('Characters')}
       >
         <Text style={styles.buttonText}>Go to Characters</Text>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.button, styles.newGameButton]}
+        style={styles.button}
         onPress={() => navigation.navigate('CreateGameScreen')}
       >
         <Text style={styles.buttonText}>New Game</Text>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.button, styles.joinGameButton]}
+        style={styles.button}
         onPress={() => navigation.navigate('JoinGame')}
       >
         <Text style={styles.buttonText}>Join Game</Text>
@@ -54,19 +54,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 5,
+    backgroundColor: '#008CBA',
   },
   buttonText: {
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
-  },
-  goToCharactersButton: {
-    backgroundColor: '#4CAF50', // Green
-  },
-  newGameButton: {
-    backgroundColor: '#008CBA', // Blue
-  },
-  joinGameButton: {
-    backgroundColor: '#f44336', // Red
   },
 });
