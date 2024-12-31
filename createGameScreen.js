@@ -1,43 +1,29 @@
+import { signInAnonymously } from 'firebase/auth';
 import { addDoc, collection } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
-import { db } from './firebaseConfig';
+import { auth, db } from './firebaseConfig';
 
 export default function CreateGameScreen() {
   const [gameCode, setGameCode] = useState(null);
 
-  // Function to generate a 6-character game code
-  const generateGameCode = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return code;
-  };
 
-  // Function to create a game and save to Firebase
-  const auth = getAuth();
-  signInAnonymously(auth)
-    .then(() => {
-      console.log("Signed in anonymously");
-      handleCreateGame();
-    })
-    .catch((error) => {
-      console.error("Error signing in:", error);
-    });
-  
   const handleCreateGame = async () => {
     try {
+      await signInAnonymously(auth);
+      console.log("Signed in anonymously");
+
+      // Create a new game
       const newGame = {
-        gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(), // 6-character code
+        gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
         createdAt: new Date(),
       };
-  
-      const docRef = await addDoc(collection(db, "games"), newGame);
-      console.log("Game created with ID:", docRef.id);
+
+      const docRef = await addDoc(collection(db, 'games'), newGame);
+      console.log('Game created with ID:', docRef.id);
+      setGameCode(newGame.gameCode);
     } catch (error) {
-      console.error("Error creating game:", error);
+      console.error('Error:', error);
     }
   };
 

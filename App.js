@@ -14,10 +14,10 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="Characters" component={Characters} />
-        <Stack.Screen name="CreateGameScreen" component={CreateGameScreen} />
-        <Stack.Screen name="JoinGame" component={JoinGame} />
+        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+        <Stack.Screen name="Characters" component={Characters} options={{ headerShown: false }} />
+        <Stack.Screen name="CreateGameScreen" component={CreateGameScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="JoinGame" component={JoinGame} options={{ headerShown: false }}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
