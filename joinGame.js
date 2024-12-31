@@ -1,9 +1,9 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from './firebaseConfig';
 
-export default function JoinGame() {
+export default function JoinGame({ navigation }) {
   const [enteredCode, setEnteredCode] = useState('');
   const [joinedGame, setJoinedGame] = useState(null);
 
@@ -48,6 +48,11 @@ export default function JoinGame() {
           <Button title="Join Game" onPress={handleJoinGame} />
         </>
       )}
+
+      {/* Return Button */}
+      <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.returnButtonText}>Return</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -64,6 +69,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
   },
   input: {
     borderWidth: 1,
@@ -73,6 +79,7 @@ const styles = StyleSheet.create({
     width: '80%',
     marginBottom: 20,
     textAlign: 'center',
+    fontSize: 18,
   },
   successText: {
     fontSize: 18,
@@ -84,5 +91,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'blue',
     marginVertical: 10,
+  },
+  returnButton: {
+    marginTop: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#008CBA',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  returnButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

@@ -1,30 +1,63 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc, collection } from 'firebase/firestore';
-import React, { useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import CharacterSelectionModal from './characterSelectionModal';
 import { auth, db } from './firebaseConfig';
 
-export default function CreateGameScreen() {
+export default function CreateGameScreen({ navigation }) {
   const [gameCode, setGameCode] = useState(null);
+  const [selectedCharacters, setSelectedCharacters] = useState([]);
+  const [characters, setCharacters] = useState([]); // Store all characters locally
+  const [modalVisible, setModalVisible] = useState(false);
 
+  useEffect(() => {
+    const loadCharacters = async () => {
+      try {
+        const storedCharacters = await AsyncStorage.getItem('characters');
+        if (storedCharacters) {
+          setCharacters(JSON.parse(storedCharacters));
+        }
+      } catch (error) {
+        console.error('Failed to load characters', error);
+      }
+    };
 
-  const handleCreateGame = async () => {
-    try {
-      await signInAnonymously(auth);
-      console.log("Signed in anonymously");
+    loadCharacters();
 
-      // Create a new game
-      const newGame = {
-        gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
-        createdAt: new Date(),
-      };
+    const createGame = async () => {
+      try {
+        await signInAnonymously(auth);
+        console.log('Signed in anonymously');
 
-      const docRef = await addDoc(collection(db, 'games'), newGame);
-      console.log('Game created with ID:', docRef.id);
-      setGameCode(newGame.gameCode);
-    } catch (error) {
-      console.error('Error:', error);
-    }
+        // Create a new game
+        const newGame = {
+          gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
+          createdAt: new Date(),
+        };
+
+        const docRef = await addDoc(collection(db, 'games'), newGame);
+        console.log('Game created with ID:', docRef.id);
+        setGameCode(newGame.gameCode);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    createGame();
+  }, []);
+
+  const handleOpenModal = () => {
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSelectCharacters = (selectedIds) => {
+    setSelectedCharacters(selectedIds);
   };
 
   return (
@@ -37,8 +70,31 @@ export default function CreateGameScreen() {
           <Text style={styles.infoText}>Share this code with your friends to join the game!</Text>
         </View>
       ) : (
-        <Button title="Create Game" onPress={handleCreateGame} />
+        <Text style={styles.infoText}>Creating game...</Text>
       )}
+
+      {/* Button to choose characters */}
+      <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
+        <Text style={styles.buttonText}>Choose Characters</Text>
+      </TouchableOpacity>
+
+      {/* Selected Characters */}
+      <Text style={styles.infoText}>
+        Selected Characters: {selectedCharacters.join(', ')}
+      </Text>
+
+      {/* Return Button */}
+      <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.returnButtonText}>Return</Text>
+      </TouchableOpacity>
+
+      {/* Character Selection Modal */}
+      <CharacterSelectionModal
+        visible={modalVisible}
+        onClose={handleCloseModal}
+        characters={characters}  // Pass loaded characters to modal
+        onSelectCharacter={handleSelectCharacters}
+      />
     </View>
   );
 }
@@ -72,5 +128,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     color: '#555',
+  },
+  button: {
+    backgroundColor: '#008CBA',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  returnButton: {
+    marginTop: 30,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#008CBA',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  returnButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
