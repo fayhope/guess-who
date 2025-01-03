@@ -1,7 +1,9 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function GameScreen({ route }) {
+  const navigation = useNavigation();
   const { characters = [] } = route.params || {}; // Default to empty array
   const [selectedCharacters, setSelectedCharacters] = useState([]);
   const [isTurnOver, setIsTurnOver] = useState(false);
@@ -20,6 +22,10 @@ export default function GameScreen({ route }) {
       setSelectedCharacters([]); // Reset selections
       setIsTurnOver(false); // Allow the next turn
     }, 2000); // Simulated delay
+  };
+
+  const handleExit = () => {
+    navigation.goBack(); // Navigate back to the previous screen
   };
 
   return (
@@ -50,6 +56,12 @@ export default function GameScreen({ route }) {
         disabled={isTurnOver}
       >
         <Text style={styles.buttonText}>Remove</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.exitButton}
+        onPress={handleExit}
+      >
+        <Text style={styles.buttonText}>Exit</Text>
       </TouchableOpacity>
     </View>
   );
@@ -102,6 +114,13 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#bbb',
+  },
+  exitButton: {
+    marginTop: 10,
+    padding: 15,
+    backgroundColor: '#FF5733',
+    borderRadius: 10,
+    alignItems: 'center',
   },
   buttonText: {
     fontSize: 18,

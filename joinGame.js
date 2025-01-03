@@ -1,97 +1,92 @@
-import { getAuth, signInAnonymously } from 'firebase/auth'; // Import signInAnonymously
-import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import React, { useState } from 'react';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { collection, doc, getDocs, query, updateDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from './firebaseConfig';
 
 export default function JoinGame({ navigation }) {
   const [enteredCode, setEnteredCode] = useState('');
-  const [joinedGame, setJoinedGame] = useState(null);
+  const [gameStatus, setGameStatus] = useState('waiting');
+  const [players, setPlayers] = useState([]);
 
-  // Function to handle joining a game
-  const handleJoinGame = async () => {
-    try {
-      const auth = getAuth(); // Get Firebase authentication instance
-
-      // Check if the user is already signed in
-      if (!auth.currentUser) {
-        // Sign the user in anonymously if not signed in
-        await signInAnonymously(auth);
-        console.log('Signed in anonymously');
-      }
-
-      // Query the games collection for the game with the entered code
+  useEffect(() => {
+    const checkGameStatus = async () => {
       const q = query(collection(db, 'games'), where('gameCode', '==', enteredCode.toUpperCase()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
         const gameDoc = querySnapshot.docs[0];
         const gameData = gameDoc.data();
-        const players = gameData.players || [];
-
-        // Check if the player is already in the game
-        const playerAlreadyJoined = players.some(player => player.playerId === auth.currentUser.uid);
-
-        if (playerAlreadyJoined) {
-          Alert.alert('Error', 'You have already joined this game.');
-          return;
-        }
-
-        // Add the player to the game (assuming player has no characters selected for now)
-        const newPlayer = {
-          playerId: auth.currentUser.uid,
-          selectedCharacters: [], // Initial empty characters for the player
-          turn: players.length === 0 ? 0 : 1, // Assign turn to the first player
-        };
-
-        players.push(newPlayer);
-
-        // Update the game document with the new player
-        const gameRef = doc(db, 'games', gameDoc.id);
-        await updateDoc(gameRef, { players });
-
-        setJoinedGame(enteredCode.toUpperCase());
-        Alert.alert('Success', `You've joined the game with code: ${enteredCode.toUpperCase()}`);
-
-        // Navigate to the game screen
-        navigation.navigate('GameScreen', {
-          gameCode: enteredCode.toUpperCase(),
-          players, // Pass players data for game screen
-        });
-      } else {
-        Alert.alert('Error', 'Invalid game code. Please try again.');
+        setPlayers(gameData.players);
+        setGameStatus(gameData.gameStatus);
       }
-    } catch (error) {
-      console.error('Error joining game:', error);
-      Alert.alert('Error', 'Failed to join game. Please try again.');
+    };
+
+    if (enteredCode) {
+      checkGameStatus();
+    }
+  }, [enteredCode]);
+
+  const handleJoinGame = async () => {
+    const auth = getAuth();
+
+    // Sign in anonymously if not already signed in
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
     }
 
-    setEnteredCode('');
+    const q = query(collection(db, 'games'), where('gameCode', '==', enteredCode.toUpperCase()));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const gameDoc = querySnapshot.docs[0];
+      const gameData = gameDoc.data();
+
+      const playerAlreadyJoined = gameData.players.some(player => player.playerId === auth.currentUser.uid);
+
+      if (playerAlreadyJoined) {
+        Alert.alert('Error', 'You are already in this game.');
+        return;
+      }
+
+      // Add player to the game
+      const newPlayer = {
+        playerId: auth.currentUser.uid,
+        selectedCharacters: [],  // Players will select characters after joining
+      };
+
+      const updatedPlayers = [...gameData.players, newPlayer];
+      await updateDoc(doc(db, 'games', gameDoc.id), { players: updatedPlayers });
+
+      // Navigate to game screen
+      if (gameData.gameStatus === 'started') {
+        navigation.navigate('GameScreen', { gameCode: enteredCode });
+      } else {
+        Alert.alert('Waiting', 'Waiting for the game to start...');
+      }
+    } else {
+      Alert.alert('Error', 'Invalid game code');
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Join a Game</Text>
-      {joinedGame ? (
-        <View>
-          <Text style={styles.successText}>You've successfully joined the game!</Text>
-          <Text style={styles.gameCode}>Game Code: {joinedGame}</Text>
-        </View>
-      ) : (
-        <>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Game Code"
-            value={enteredCode}
-            onChangeText={setEnteredCode}
-            autoCapitalize="characters"
-            maxLength={6}
-          />
-          <Button title="Join Game" onPress={handleJoinGame} />
-        </>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Game Code"
+        value={enteredCode}
+        onChangeText={setEnteredCode}
+        maxLength={6}
+      />
+
+      <Button title="Join Game" onPress={handleJoinGame} />
+
+      {gameStatus === 'waiting' && players.length < 2 && (
+        <Text style={styles.waitingText}>Waiting for the game to start...</Text>
       )}
 
-      {/* Return Button */}
       <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
         <Text style={styles.returnButtonText}>Return</Text>
       </TouchableOpacity>
@@ -128,6 +123,11 @@ const styles = StyleSheet.create({
     color: 'green',
     marginVertical: 10,
   },
+  waitingText: {
+    fontSize: 18,
+    color: 'orange',
+    marginVertical: 10,
+  },
   gameCode: {
     fontSize: 36,
     fontWeight: 'bold',
@@ -142,11 +142,16 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
   },
   returnButtonText: {
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  infoText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 10,
+    color: '#555',
   },
 });
