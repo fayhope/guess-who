@@ -23,6 +23,12 @@ export default function Home({ navigation }) {
       >
         <Text style={styles.buttonText}>Join Game</Text>
       </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={() => navigation.navigate('JoinGame')}
+      >
+        <Text style={styles.buttonText}>How to Play</Text>
+      </TouchableOpacity>
     </View>
   );
 }

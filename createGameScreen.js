@@ -60,6 +60,11 @@ export default function CreateGameScreen({ navigation }) {
     setSelectedCharacters(selectedIds);
   };
 
+  const startGame = () => {
+    //save all details 
+    navigation.navigate(GameScreen);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create a New Game</Text>
@@ -75,6 +80,10 @@ export default function CreateGameScreen({ navigation }) {
 
       <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
         <Text style={styles.buttonText}>Choose Characters</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={startGame}>
+        <Text style={styles.buttonText}>Start</Text>
       </TouchableOpacity>
   
       <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
