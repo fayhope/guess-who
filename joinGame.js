@@ -1,4 +1,5 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth'; // Import signInAnonymously
+import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from './firebaseConfig';
@@ -10,12 +11,53 @@ export default function JoinGame({ navigation }) {
   // Function to handle joining a game
   const handleJoinGame = async () => {
     try {
-      const q = query(collection(db, 'games'), where('code', '==', enteredCode.toUpperCase()));
+      const auth = getAuth(); // Get Firebase authentication instance
+
+      // Check if the user is already signed in
+      if (!auth.currentUser) {
+        // Sign the user in anonymously if not signed in
+        await signInAnonymously(auth);
+        console.log('Signed in anonymously');
+      }
+
+      // Query the games collection for the game with the entered code
+      const q = query(collection(db, 'games'), where('gameCode', '==', enteredCode.toUpperCase()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
+        const gameDoc = querySnapshot.docs[0];
+        const gameData = gameDoc.data();
+        const players = gameData.players || [];
+
+        // Check if the player is already in the game
+        const playerAlreadyJoined = players.some(player => player.playerId === auth.currentUser.uid);
+
+        if (playerAlreadyJoined) {
+          Alert.alert('Error', 'You have already joined this game.');
+          return;
+        }
+
+        // Add the player to the game (assuming player has no characters selected for now)
+        const newPlayer = {
+          playerId: auth.currentUser.uid,
+          selectedCharacters: [], // Initial empty characters for the player
+          turn: players.length === 0 ? 0 : 1, // Assign turn to the first player
+        };
+
+        players.push(newPlayer);
+
+        // Update the game document with the new player
+        const gameRef = doc(db, 'games', gameDoc.id);
+        await updateDoc(gameRef, { players });
+
         setJoinedGame(enteredCode.toUpperCase());
         Alert.alert('Success', `You've joined the game with code: ${enteredCode.toUpperCase()}`);
+
+        // Navigate to the game screen
+        navigation.navigate('GameScreen', {
+          gameCode: enteredCode.toUpperCase(),
+          players, // Pass players data for game screen
+        });
       } else {
         Alert.alert('Error', 'Invalid game code. Please try again.');
       }

@@ -1,34 +1,56 @@
-import React from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function GameScreen({ route, navigation }) {
-  const { characters, gridRows = 5, gridCols = 5 } = route.params;
+export default function GameScreen({ route }) {
+  const { characters = [] } = route.params || {}; // Default to empty array
+  const [selectedCharacters, setSelectedCharacters] = useState([]);
+  const [isTurnOver, setIsTurnOver] = useState(false);
 
-  // Calculate grid item size
-  const screenWidth = Dimensions.get('window').width;
-  const itemSize = Math.floor(screenWidth / gridCols) - 10; // Padding adjustment
+  const handleSelectCharacter = (characterId) => {
+    setSelectedCharacters((prevSelected) =>
+      prevSelected.includes(characterId)
+        ? prevSelected.filter((id) => id !== characterId)
+        : [...prevSelected, characterId]
+    );
+  };
+
+  const handleRemove = () => {
+    setIsTurnOver(true);
+    setTimeout(() => {
+      setSelectedCharacters([]); // Reset selections
+      setIsTurnOver(false); // Allow the next turn
+    }, 2000); // Simulated delay
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Game Screen</Text>
+      <Text style={styles.title}>Guess Who</Text>
       <FlatList
         data={characters}
         keyExtractor={(item) => item.id}
-        numColumns={gridCols}
+        numColumns={5} // Change grid size if needed
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.characterTile, { width: itemSize, height: itemSize }]}
-            onPress={() => console.log(`Selected: ${item.name}`)}
+            style={[
+              styles.characterBox,
+              selectedCharacters.includes(item.id) && styles.selected,
+            ]}
+            onPress={() => handleSelectCharacter(item.id)}
+            disabled={isTurnOver}
           >
-            {item.image ? (
-              <Image source={{ uri: item.image }} style={styles.characterImage} />
-            ) : (
-              <Text style={styles.characterText}>{item.name}</Text>
-            )}
+            {item.image && <Image source={{ uri: item.image }} style={styles.characterImage} />}
+            <Text style={styles.characterName}>{item.name}</Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.grid}
       />
+      <TouchableOpacity
+        style={[styles.removeButton, isTurnOver && styles.disabledButton]}
+        onPress={handleRemove}
+        disabled={isTurnOver}
+      >
+        <Text style={styles.buttonText}>Remove</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -36,54 +58,52 @@ export default function GameScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    padding: 10,
+    padding: 20,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
   },
   grid: {
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  characterTile: {
-    justifyContent: 'center',
-    alignItems: 'center',
+  characterBox: {
+    flex: 1,
     margin: 5,
-    backgroundColor: '#e0e0e0',
+    padding: 10,
+    backgroundColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 4,
+  },
+  selected: {
+    backgroundColor: 'red',
   },
   characterImage: {
-    width: '90%',
-    height: '90%',
+    width: 50,
+    height: 50,
     borderRadius: 5,
+    marginBottom: 5,
   },
-  characterText: {
+  characterName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    padding: 5,
+    color: '#fff',
   },
-  returnButton: {
+  removeButton: {
     marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
+    padding: 15,
     backgroundColor: '#008CBA',
-    borderRadius: 30,
-    justifyContent: 'center',
+    borderRadius: 10,
     alignItems: 'center',
   },
-  returnButtonText: {
+  disabledButton: {
+    backgroundColor: '#bbb',
+  },
+  buttonText: {
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',

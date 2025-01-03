@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnonymously } from 'firebase/auth';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CharacterSelectionModal from './characterSelectionModal';
@@ -9,8 +9,9 @@ import { auth, db } from './firebaseConfig';
 export default function CreateGameScreen({ navigation }) {
   const [gameCode, setGameCode] = useState(null);
   const [selectedCharacters, setSelectedCharacters] = useState([]);
-  const [characters, setCharacters] = useState([]); // Store all characters locally
+  const [characters, setCharacters] = useState([]); 
   const [modalVisible, setModalVisible] = useState(false);
+  const [playerId, setPlayerId] = useState(null);
 
   useEffect(() => {
     const loadCharacters = async () => {
@@ -35,6 +36,8 @@ export default function CreateGameScreen({ navigation }) {
         const newGame = {
           gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
           createdAt: new Date(),
+          players: [], // Players array to hold player data
+          turn: 0, // Track turn (0 for player 1, 1 for player 2, etc.)
         };
 
         const docRef = await addDoc(collection(db, 'games'), newGame);
@@ -60,10 +63,45 @@ export default function CreateGameScreen({ navigation }) {
     setSelectedCharacters(selectedIds);
   };
 
-  const startGame = () => {
-    //save all details 
-    navigation.navigate(GameScreen);
-  }
+  const startGame = async () => {
+    if (selectedCharacters.length === 0) {
+      alert('Please select at least one character to start the game.');
+      return;
+    }
+
+    try {
+      const gameRef = doc(db, 'games', gameCode);  
+      const gameSnapshot = await getDoc(gameRef);
+      
+      if (gameSnapshot.exists()) {
+        const gameData = gameSnapshot.data();
+        const players = gameData.players || [];
+
+        const newPlayer = {
+          playerId: auth.currentUser.uid,
+          selectedCharacters,
+          turn: players.length === 0 ? 0 : 1,  
+        };
+
+        players.push(newPlayer);
+
+        await updateDoc(gameRef, { players });
+
+        // Save player ID
+        setPlayerId(auth.currentUser.uid);
+        navigation.navigate('GameScreen', {
+          gameCode,
+          characters: characters.filter((character) =>
+            selectedCharacters.includes(character.id)
+          ),
+          gridRows: 5, 
+          gridCols: 5,
+        });
+      }
+    } catch (error) {
+      console.error('Error starting the game:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
