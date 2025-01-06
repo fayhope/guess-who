@@ -13,19 +13,27 @@ export default function JoinGame({ navigation }) {
     const checkGameStatus = async () => {
       const q = query(collection(db, 'games'), where('gameCode', '==', enteredCode.toUpperCase()));
       const querySnapshot = await getDocs(q);
-
+  
       if (!querySnapshot.empty) {
         const gameDoc = querySnapshot.docs[0];
         const gameData = gameDoc.data();
+  
         setPlayers(gameData.players);
         setGameStatus(gameData.gameStatus);
+  
+        if (gameData.gameStatus === 'started') {
+          // Navigate to Game Screen and fetch characters
+          navigation.navigate('GameScreen', {
+            gameCode: enteredCode,
+          });
+        }
       }
     };
-
+  
     if (enteredCode) {
       checkGameStatus();
     }
-  }, [enteredCode]);
+  }, [enteredCode, gameStatus]);
 
   const handleJoinGame = async () => {
     const auth = getAuth();

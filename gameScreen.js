@@ -1,71 +1,55 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { db } from './firebaseConfig';
 
 export default function GameScreen({ route }) {
-  const navigation = useNavigation();
-  const { characters = [] } = route.params || {}; // Default to empty array
-  const [selectedCharacters, setSelectedCharacters] = useState([]);
-  const [isTurnOver, setIsTurnOver] = useState(false);
+  const { gameCode } = route.params;
+  const [characters, setCharacters] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSelectCharacter = (characterId) => {
-    setSelectedCharacters((prevSelected) =>
-      prevSelected.includes(characterId)
-        ? prevSelected.filter((id) => id !== characterId)
-        : [...prevSelected, characterId]
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      try {
+        const gameRef = doc(db, 'games', gameCode);
+        const gameSnapshot = await getDoc(gameRef);
+
+        if (gameSnapshot.exists()) {
+          const gameData = gameSnapshot.data();
+          setCharacters(gameData.selectedCharacters || []);  // Fetch selected characters
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching game data:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchCharacters();
+  }, [gameCode]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading characters...</Text>
+      </View>
     );
-  };
-
-  const handleRemove = () => {
-    setIsTurnOver(true);
-    setTimeout(() => {
-      setSelectedCharacters([]); // Reset selections
-      setIsTurnOver(false); // Allow the next turn
-    }, 2000); // Simulated delay
-  };
-
-  const handleExit = () => {
-    navigation.goBack(); // Navigate back to the previous screen
-  };
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Guess Who</Text>
-      <FlatList
-        data={characters}
-        keyExtractor={(item) => item.id}
-        numColumns={5} // Change grid size if needed
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.characterBox,
-              selectedCharacters.includes(item.id) && styles.selected,
-            ]}
-            onPress={() => handleSelectCharacter(item.id)}
-            disabled={isTurnOver}
-          >
-            {item.image && <Image source={{ uri: item.image }} style={styles.characterImage} />}
-            <Text style={styles.characterName}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.grid}
-      />
-      <TouchableOpacity
-        style={[styles.removeButton, isTurnOver && styles.disabledButton]}
-        onPress={handleRemove}
-        disabled={isTurnOver}
-      >
-        <Text style={styles.buttonText}>Remove</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.exitButton}
-        onPress={handleExit}
-      >
-        <Text style={styles.buttonText}>Exit</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Game Started!</Text>
+      <Text style={styles.subtitle}>Here are the characters:</Text>
+      {characters.map((character, index) => (
+        <Text key={index} style={styles.character}>
+          {character}
+        </Text>
+      ))}
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

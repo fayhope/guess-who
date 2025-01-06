@@ -73,29 +73,24 @@ export default function CreateGameScreen({ navigation }) {
       alert('Please select characters first.');
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     try {
       const gameRef = doc(db, 'games', gameCode);  
       const gameSnapshot = await getDoc(gameRef);
-
+  
       if (gameSnapshot.exists()) {
-        const gameData = gameSnapshot.data();
-        const updatedPlayers = gameData.players.map(player => ({
-          ...player,
-          selectedCharacters: selectedCharacters,  // Assign characters
-        }));
-
-        await updateDoc(gameRef, { players: updatedPlayers, gameStatus: 'started' });
+        await updateDoc(gameRef, {
+          selectedCharacters,  
+          gameStatus: 'started',  
+        });
+  
         setIsLoading(false);
-
+  
         // Navigate to the Game Screen
         navigation.navigate('GameScreen', {
           gameCode,
-          characters: characters.filter(character => selectedCharacters.includes(character.id)),
-          gridRows: 5,
-          gridCols: 5,
         });
       }
     } catch (error) {
@@ -103,6 +98,7 @@ export default function CreateGameScreen({ navigation }) {
       setIsLoading(false);
     }
   };
+  
 
   const handleOpenModal = () => {
     setModalVisible(true);
