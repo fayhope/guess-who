@@ -1,6 +1,7 @@
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { signInAnonymously as firebaseSignInAnonymously, getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -18,5 +19,23 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth= getAuth(app);
 
-export { auth, db };
+const signInAnonymously = async () => {
+  try {
+    const storedUserId = await AsyncStorage.getItem('userId');
+  if(storedUserId) {
+    console.log("user id found in storage:", storedUserId)
+      return await auth.signInWithCustomToken(storedUserId);
+  } else {
+      const userCredential =  await firebaseSignInAnonymously(auth);
+      const userId = userCredential.user.uid
+       await AsyncStorage.setItem('userId', userId);
+      console.log("User signed in anonymously with new id:", userId)
+      return userCredential
+      }
+  } catch(error) {
+      console.error("Error signing in anonymously", error)
+      throw error
+    }
+};
 
+export { auth, db, signInAnonymously };

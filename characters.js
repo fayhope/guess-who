@@ -4,25 +4,30 @@ import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function Characters({ navigation }) {
-  const [name, setName] = useState('');
-  const [image, setImage] = useState(null);
-  const [characters, setCharacters] = useState([]);
+    console.log("Characters component mounted");
+    const [name, setName] = useState('');
+    const [image, setImage] = useState(null);
+    const [characters, setCharacters] = useState([]);
 
   useEffect(() => {
     loadCharacters();
   }, []);
 
-  const handleDeleteCharacter = (id) => {
+  const handleDeleteCharacter = async (id) => {
     const updatedCharacters = characters.filter((character) => character.id !== id);
     setCharacters(updatedCharacters);
-    saveCharacters(updatedCharacters);
+    await saveCharacters(updatedCharacters); // Wait for saving to finish
   };
 
   const loadCharacters = async () => {
     try {
       const storedCharacters = await AsyncStorage.getItem('characters');
       if (storedCharacters) {
-        setCharacters(JSON.parse(storedCharacters));
+          const parsedCharacters = JSON.parse(storedCharacters);
+        setCharacters(parsedCharacters);
+        console.log("Characters loaded from storage:", parsedCharacters);
+      } else {
+        console.log("No characters found in storage");
       }
     } catch (error) {
       console.error('Failed to load characters', error);
@@ -32,12 +37,13 @@ export default function Characters({ navigation }) {
   const saveCharacters = async (newCharacters) => {
     try {
       await AsyncStorage.setItem('characters', JSON.stringify(newCharacters));
+       console.log("Characters saved to storage:", newCharacters);
     } catch (error) {
       console.error('Failed to save characters', error);
     }
   };
 
-  const handleAddCharacter = () => {
+  const handleAddCharacter = async () => { // Make function async
     if (!name.trim()) {
       Alert.alert('Error', 'Name is required!');
       return;
@@ -47,7 +53,7 @@ export default function Characters({ navigation }) {
     const updatedCharacters = [...characters, newCharacter];
 
     setCharacters(updatedCharacters);
-    saveCharacters(updatedCharacters);
+    await saveCharacters(updatedCharacters);  // Wait for saving to finish
     setName('');
     setImage(null);
   };

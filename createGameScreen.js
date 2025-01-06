@@ -1,116 +1,125 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnonymously } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CharacterSelectionModal from './characterSelectionModal';
 import { auth, db } from './firebaseConfig';
 
 export default function CreateGameScreen({ navigation }) {
+  console.log("CreateGameScreen Mounted");
   const [gameCode, setGameCode] = useState(null);
   const [selectedCharacters, setSelectedCharacters] = useState([]);
   const [characters, setCharacters] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [players, setPlayers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);  // For loading state
+  const [playerId, setPlayerId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+    const [gameId, setGameId] = useState(null);
+  const [loadingCharacters, setLoadingCharacters] = useState(true);
 
   useEffect(() => {
     const loadCharacters = async () => {
+      setLoadingCharacters(true);
       try {
         const storedCharacters = await AsyncStorage.getItem('characters');
         if (storedCharacters) {
-          setCharacters(JSON.parse(storedCharacters));
+          const parsedCharacters = JSON.parse(storedCharacters);
+          setCharacters(parsedCharacters);
+          console.log("Characters loaded from storage:", parsedCharacters);
+        } else {
+          console.log('No characters found in AsyncStorage');
         }
       } catch (error) {
-        console.error('Failed to load characters', error);
+        console.error('Failed to load characters:', error);
       }
+      setLoadingCharacters(false);
     };
 
     loadCharacters();
-
-    const createGame = async () => {
-      try {
-        await signInAnonymously(auth);
-        console.log('Signed in anonymously');
-
-        // Create a new game
-        const newGame = {
-          gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
-          createdAt: new Date(),
-          players: [],  // Empty players initially
-          turn: 0,
-          gameStatus: 'waiting',  // 'waiting' before start
-        };
-
-        const docRef = await addDoc(collection(db, 'games'), newGame);
-        console.log('Game created with ID:', docRef.id);
-        setGameCode(newGame.gameCode);
-
-        // Listen for players joining
-        const unsubscribe = onSnapshot(doc(db, 'games', docRef.id), (docSnap) => {
-          if (docSnap.exists()) {
-            const gameData = docSnap.data();
-            setPlayers(gameData.players);
-          }
-        });
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-
-    createGame();
   }, []);
 
-  useEffect(() => {
-    if (players.length >= 2) {
-      // Allow creator to start the game once two players have joined
-      setIsLoading(false);
-    }
-  }, [players]);
-
-  const startGame = async () => {
-    if (selectedCharacters.length === 0) {
-      alert('Please select characters first.');
-      return;
-    }
-  
-    setIsLoading(true);
-  
+  const createGame = async () => {
     try {
-      const gameRef = doc(db, 'games', gameCode);  
-      const gameSnapshot = await getDoc(gameRef);
-  
-      if (gameSnapshot.exists()) {
-        await updateDoc(gameRef, {
-          selectedCharacters,  
-          gameStatus: 'started',  
-        });
-  
-        setIsLoading(false);
-  
-        // Navigate to the Game Screen
-        navigation.navigate('GameScreen', {
-          gameCode,
-        });
-      }
+      await signInAnonymously(auth);
+      console.log('Signed in anonymously');
+
+      const newGame = {
+        gameCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
+        createdAt: new Date(),
+        players: [],
+        turn: 0,
+      };
+
+      const docRef = await addDoc(collection(db, 'games'), newGame);
+      console.log('Game created with ID:', docRef.id);
+      setGameCode(newGame.gameCode);
+        setGameId(docRef.id);
     } catch (error) {
-      console.error('Error starting the game:', error);
-      setIsLoading(false);
+      console.error('Error creating game:', error);
     }
   };
-  
 
-  const handleOpenModal = () => {
-    setModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-  };
+  useEffect(() => {
+    createGame();
+  }, []);
 
   const handleSelectCharacters = (selectedIds) => {
     setSelectedCharacters(selectedIds);
   };
+
+    const startGame = async () => {
+        if (characters.length === 0) {
+            alert('Please wait for the characters to load.');
+            return;
+        }
+        
+        if (selectedCharacters.length === 0) {
+            alert('Please select at least one character to start the game.');
+            return;
+        }
+    
+      setIsLoading(true);
+
+        try {
+          const gameRef = doc(db, 'games', gameId);
+          const gameSnapshot = await getDoc(gameRef);
+          const gameData = gameSnapshot.data()
+          let players = gameData ? gameData.players || [] : [];
+          
+           // Add creator (current user) to players
+           const newPlayer = {
+               playerId: auth.currentUser.uid,
+               selectedCharacters,
+               turn: players.length === 0 ? 0 : 1,  // First player goes first
+             };
+
+           players.push(newPlayer);
+           
+           // If the players length is 2, then start the game
+          if (players.length === 2) {
+            await updateDoc(gameRef, { gameStatus: 'started' });
+         }
+          
+            // Update the game document in Firebase
+          await updateDoc(gameRef, { players }).then(() => {
+                // Navigate to the game screen
+                navigation.navigate('GameScreen', {
+                  gameCode,
+                selectedCharacters,
+                    gridRows: 5,
+                    gridCols: 5,
+                });
+           })
+          
+          // Set player ID and stop loading
+          setPlayerId(auth.currentUser.uid);
+          setIsLoading(false);
+    
+        } catch (error) {
+          console.error('Error starting the game:', error);
+          setIsLoading(false); // Stop loading in case of error
+        }
+    };
 
   return (
     <View style={styles.container}>
@@ -125,12 +134,14 @@ export default function CreateGameScreen({ navigation }) {
         <Text style={styles.infoText}>Creating game...</Text>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
-        <Text style={styles.buttonText}>Choose Characters</Text>
-      </TouchableOpacity>
+      {!loadingCharacters && (
+        <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+          <Text style={styles.buttonText}>Choose Characters</Text>
+        </TouchableOpacity>
+      )}
 
-      <TouchableOpacity style={styles.button} onPress={startGame} disabled={isLoading || players.length < 2}>
-        <Text style={styles.buttonText}>{isLoading ? 'Starting Game...' : 'Start Game'}</Text>
+      <TouchableOpacity style={styles.button} onPress={startGame} disabled={isLoading}>
+        <Text style={styles.buttonText}>{isLoading ? 'Starting Game...' : 'Start'}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
@@ -139,8 +150,8 @@ export default function CreateGameScreen({ navigation }) {
 
       <CharacterSelectionModal
         visible={modalVisible}
-        onClose={handleCloseModal}
-        characters={characters}  
+        onClose={() => setModalVisible(false)}
+        characters={characters}
         onSelectCharacter={handleSelectCharacters}
       />
     </View>
