@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnonymously } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CharacterSelectionModal from './characterSelectionModal';
@@ -14,7 +14,7 @@ export default function CreateGameScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [playerId, setPlayerId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-    const [gameId, setGameId] = useState(null);
+  const [gameId, setGameId] = useState(null);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
 
   useEffect(() => {
@@ -48,12 +48,17 @@ export default function CreateGameScreen({ navigation }) {
         createdAt: new Date(),
         players: [],
         turn: 0,
+        gameStatus: 'waiting', // New field to track game status
       };
 
       const docRef = await addDoc(collection(db, 'games'), newGame);
       console.log('Game created with ID:', docRef.id);
       setGameCode(newGame.gameCode);
-        setGameId(docRef.id);
+      setGameId(docRef.id);
+
+      // Count total games in Firestore
+      const gamesSnapshot = await getDocs(collection(db, 'games'));
+      console.log('Total games in Firestore:', gamesSnapshot.size);
     } catch (error) {
       console.error('Error creating game:', error);
     }
@@ -67,59 +72,52 @@ export default function CreateGameScreen({ navigation }) {
     setSelectedCharacters(selectedIds);
   };
 
-    const startGame = async () => {
-        if (characters.length === 0) {
-            alert('Please wait for the characters to load.');
-            return;
-        }
-        
-        if (selectedCharacters.length === 0) {
-            alert('Please select at least one character to start the game.');
-            return;
-        }
-    
-      setIsLoading(true);
+  const startGame = async () => {
+    if (characters.length === 0) {
+      alert('Please wait for the characters to load.');
+      return;
+    }
 
-        try {
-          const gameRef = doc(db, 'games', gameId);
-          const gameSnapshot = await getDoc(gameRef);
-          const gameData = gameSnapshot.data()
-          let players = gameData ? gameData.players || [] : [];
-          
-           // Add creator (current user) to players
-           const newPlayer = {
-               playerId: auth.currentUser.uid,
-               selectedCharacters,
-               turn: players.length === 0 ? 0 : 1,  // First player goes first
-             };
+    if (selectedCharacters.length === 0) {
+      alert('Please select at least one character to start the game.');
+      return;
+    }
 
-           players.push(newPlayer);
-           
-           // If the players length is 2, then start the game
-          if (players.length === 2) {
-            await updateDoc(gameRef, { gameStatus: 'started' });
-         }
-          
-            // Update the game document in Firebase
-          await updateDoc(gameRef, { players }).then(() => {
-                // Navigate to the game screen
-                navigation.navigate('GameScreen', {
-                  gameCode,
-                selectedCharacters,
-                    gridRows: 5,
-                    gridCols: 5,
-                });
-           })
-          
-          // Set player ID and stop loading
-          setPlayerId(auth.currentUser.uid);
-          setIsLoading(false);
-    
-        } catch (error) {
-          console.error('Error starting the game:', error);
-          setIsLoading(false); // Stop loading in case of error
-        }
-    };
+    setIsLoading(true);
+
+    try {
+      const gameRef = doc(db, 'games', gameId);
+      const gameSnapshot = await getDoc(gameRef);
+      const gameData = gameSnapshot.data();
+      let players = gameData ? gameData.players || [] : [];
+
+      // Add creator (current user) to players if not already added
+      if (!players.some(player => player.playerId === auth.currentUser.uid)) {
+        const newPlayer = {
+          playerId: auth.currentUser.uid,
+          turn: players.length, // Assign turn based on current player count
+        };
+        players.push(newPlayer);
+        await updateDoc(gameRef, { players });
+      }
+
+      // Allow game to start only if there are exactly 2 players
+      if (players.length === 2) {
+        await updateDoc(gameRef, { gameStatus: 'started', characters: selectedCharacters });
+        navigation.navigate('GameScreen', {
+          gameCode,
+          gridRows: 5,
+          gridCols: 5,
+        });
+      } else {
+        alert('Waiting for another player to join...');
+      }
+    } catch (error) {
+      console.error('Error starting the game:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>

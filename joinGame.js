@@ -1,54 +1,102 @@
-import { getAuth } from 'firebase/auth';
+import { useIsFocused } from '@react-navigation/native';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { db, signInAnonymously } from './firebaseConfig';
+import { db } from './firebaseConfig';
 
 export default function JoinGame({ navigation }) {
   const [enteredCode, setEnteredCode] = useState('');
   const [players, setPlayers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFocused = useIsFocused();
 
-    const handleJoinGame = async () => {
-      const auth = getAuth();
+  useEffect(() => {
+    const checkGameStatus = async () => {
+      if (isLoading || !enteredCode) return;
 
-       if (!auth.currentUser) {
-          await signInAnonymously();
-    }
-
-     const gamesRef = collection(db, 'games');
-      const q = query(gamesRef, where('gameCode', '==', enteredCode.toUpperCase()));
+      try {
+        await signInAnonymously(getAuth()); // Ensure the correct auth instance
+        const gamesRef = collection(db, 'games');
+        const q = query(gamesRef, where('gameCode', '==', enteredCode.toUpperCase()));
         const querySnapshot = await getDocs(q);
 
+        if (!querySnapshot.empty) {
+          const gameDoc = querySnapshot.docs[0];
+          const gameData = gameDoc.data();
+          setPlayers(gameData.players || []);
+
+          if (gameData.gameStatus !== 'started') {
+            navigation.navigate('GameScreen', {
+              gameCode: enteredCode,
+              gridRows: 5,
+              gridCols: 5,
+            });
+            return;
+          }
+        } else {
+          console.error('No game found with the entered code.');
+          alert('Game not found. Please check the game code.');
+        }
+      } catch (error) {
+        console.error('Error checking game status:', error);
+      }
+    };
+
+    if (enteredCode) {
+      checkGameStatus();
+    }
+  }, [enteredCode, isFocused, isLoading]);
+
+  const handleJoinGame = async () => {
+    setIsLoading(true);
+    const auth = getAuth();
+
+    // If not signed in yet, sign in anonymously
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+
+    const gamesRef = collection(db, 'games');
+    const q = query(gamesRef, where('gameCode', '==', enteredCode.toUpperCase()));
+    const querySnapshot = await getDocs(q);
+
     if (!querySnapshot.empty) {
-         const gameDoc = querySnapshot.docs[0];
-         const gameData = gameDoc.data();
-            setPlayers(gameData.players || []);
-            const playerAlreadyJoined = gameData.players.some(
-            (player) => player.playerId === auth.currentUser.uid
-        );
+      const gameDoc = querySnapshot.docs[0];
+      const gameData = gameDoc.data();
+
+      const playerAlreadyJoined = gameData.players.some(
+        (player) => player.playerId === auth.currentUser.uid
+      );
 
       if (playerAlreadyJoined) {
         Alert.alert('Error', 'You are already in this game.');
-          return;
-       }
+        setIsLoading(false);
+        return;
+      }
 
       const newPlayer = {
         playerId: auth.currentUser.uid,
-        selectedCharacters: [],
+        turn: gameData.players.length,
       };
 
       const updatedPlayers = [...gameData.players, newPlayer];
-      await updateDoc(doc(db, 'games', gameDoc.id), { players: updatedPlayers }).then(() => {
-          if (updatedPlayers.length === 2) {
-           navigation.navigate('GameScreen', { gameCode: enteredCode, secondPlayer: true});
-         } else {
-               console.log("Waiting for other player")
-           }
-        })
-      } else {
-          Alert.alert('Error', 'Invalid game code');
-        }
-    };
+
+      // Ensure this is awaited correctly
+      await updateDoc(doc(db, 'games', gameDoc.id), { players: updatedPlayers });
+      console.log('player joined', updatedPlayers.length);
+
+      // After player joins, navigate to GameScreen
+      navigation.navigate('GameScreen', {
+        gameCode: enteredCode,
+        gridRows: 5,
+        gridCols: 5,
+      });
+    } else {
+      Alert.alert('Error', 'Invalid game code');
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -62,11 +110,12 @@ export default function JoinGame({ navigation }) {
         maxLength={6}
       />
 
-      <Button title="Join Game" onPress={handleJoinGame} />
+      <Button title="Join Game" onPress={handleJoinGame} disabled={isLoading} />
+      {isLoading && <Text>Loading Game...</Text>}
 
-        {players.length < 2 && (
-            <Text style={styles.waitingText}>Waiting for the game to start...</Text>
-        )}
+      {players.length < 2 && !isLoading && (
+        <Text style={styles.waitingText}>Waiting for the game to start...</Text>
+      )}
 
       <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
         <Text style={styles.returnButtonText}>Return</Text>
