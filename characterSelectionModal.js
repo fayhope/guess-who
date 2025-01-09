@@ -5,11 +5,15 @@ export default function CharacterSelectionModal({ visible, onClose, characters, 
   const [selectedCharacters, setSelectedCharacters] = useState([]);
 
   const handleSelect = (characterId) => {
-    setSelectedCharacters((prevSelected) =>
-      prevSelected.includes(characterId)
-        ? prevSelected.filter((id) => id !== characterId) // Deselect if already selected
-        : [...prevSelected, characterId] // Select if not already selected
-    );
+    setSelectedCharacters((prevSelected) => {
+      const updatedSelection = prevSelected.includes(characterId)
+        ? prevSelected.filter((id) => id !== characterId)
+        : [...prevSelected, characterId];
+  
+      console.log('Selected characters:', updatedSelection);  // Debugging line
+  
+      return updatedSelection;
+    });
   };
 
   const handleSave = () => {

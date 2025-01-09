@@ -100,18 +100,19 @@ export default function CreateGameScreen({ navigation }) {
         players.push(newPlayer);
         await updateDoc(gameRef, { players });
       }
+      
+      await updateDoc(gameRef, {
+        characters: selectedCharacters, // Store selected characters
+        gameStatus: 'started', // Update game status to 'started'
+      });
 
-      // Allow game to start only if there are exactly 2 players
-      if (players.length === 2) {
-        await updateDoc(gameRef, { gameStatus: 'started', characters: selectedCharacters });
-        navigation.navigate('GameScreen', {
-          gameCode,
-          gridRows: 5,
-          gridCols: 5,
-        });
-      } else {
-        alert('Waiting for another player to join...');
-      }
+      // Navigate to Waiting Room after game creation
+      navigation.navigate('WaitingRoom', {
+        gameCode,
+        gameId,
+        selectedCharacters, // Pass selected characters to the Waiting Room
+      });
+
     } catch (error) {
       console.error('Error starting the game:', error);
     } finally {
@@ -122,15 +123,6 @@ export default function CreateGameScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create a New Game</Text>
-      {gameCode ? (
-        <View>
-          <Text style={styles.gameCodeText}>Game Code:</Text>
-          <Text style={styles.gameCode}>{gameCode}</Text>
-          <Text style={styles.infoText}>Share this code with your friends to join the game!</Text>
-        </View>
-      ) : (
-        <Text style={styles.infoText}>Creating game...</Text>
-      )}
 
       {!loadingCharacters && (
         <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>

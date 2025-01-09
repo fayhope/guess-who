@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from "firebase/app";
 import { signInAnonymously as firebaseSignInAnonymously, getAuth, signInWithCustomToken } from "firebase/auth";
+import { getDatabase, onValue, ref, set, update } from 'firebase/database';
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const liveDb = getDatabase(app);
 
 // Renaming your custom function to avoid conflict with Firebase's function
 const customSignInAnonymously = async () => {
@@ -44,5 +46,5 @@ const customSignInAnonymously = async () => {
   }
 };
 
-export { auth, customSignInAnonymously, db };
+export { auth, customSignInAnonymously, db, liveDb, onValue, ref, set, update };
 

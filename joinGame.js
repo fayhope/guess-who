@@ -2,7 +2,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from './firebaseConfig';
 
 export default function JoinGame({ navigation }) {
@@ -13,10 +13,10 @@ export default function JoinGame({ navigation }) {
 
   useEffect(() => {
     const checkGameStatus = async () => {
-      if (isLoading || !enteredCode) return;
+      if (isLoading || !enteredCode || enteredCode.length < 6) return;
 
       try {
-        await signInAnonymously(getAuth()); // Ensure the correct auth instance
+        await signInAnonymously(getAuth());
         const gamesRef = collection(db, 'games');
         const q = query(gamesRef, where('gameCode', '==', enteredCode.toUpperCase()));
         const querySnapshot = await getDocs(q);
@@ -25,15 +25,6 @@ export default function JoinGame({ navigation }) {
           const gameDoc = querySnapshot.docs[0];
           const gameData = gameDoc.data();
           setPlayers(gameData.players || []);
-
-          if (gameData.gameStatus !== 'started') {
-            navigation.navigate('GameScreen', {
-              gameCode: enteredCode,
-              gridRows: 5,
-              gridCols: 5,
-            });
-            return;
-          }
         } else {
           console.error('No game found with the entered code.');
           alert('Game not found. Please check the game code.');
@@ -82,20 +73,20 @@ export default function JoinGame({ navigation }) {
 
       const updatedPlayers = [...gameData.players, newPlayer];
 
-      // Ensure this is awaited correctly
+      // Update the game with the new player
       await updateDoc(doc(db, 'games', gameDoc.id), { players: updatedPlayers });
-      console.log('player joined', updatedPlayers.length);
+      console.log('Player joined', updatedPlayers.length);
 
-      // After player joins, navigate to GameScreen
-      navigation.navigate('GameScreen', {
+      // Redirect to the Waiting Room
+      navigation.navigate('WaitingRoom', {
         gameCode: enteredCode,
-        gridRows: 5,
-        gridCols: 5,
+        gameId: gameDoc.id,
+        playerName: newPlayer.playerId, // Placeholder for player name
       });
     } else {
       Alert.alert('Error', 'Invalid game code');
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   return (
@@ -109,17 +100,13 @@ export default function JoinGame({ navigation }) {
         onChangeText={setEnteredCode}
         maxLength={6}
       />
-
-      <Button title="Join Game" onPress={handleJoinGame} disabled={isLoading} />
-      {isLoading && <Text>Loading Game...</Text>}
-
-      {players.length < 2 && !isLoading && (
-        <Text style={styles.waitingText}>Waiting for the game to start...</Text>
-      )}
-
-      <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.returnButtonText}>Return</Text>
-      </TouchableOpacity>
+    {isLoading && <Text>Loading Game...</Text>}
+    <TouchableOpacity style={styles.Button} onPress={() => handleJoinGame() }>
+        <Text style={styles.ButtonText}>Join Game</Text>
+    </TouchableOpacity>   
+    <TouchableOpacity style={styles.Button} onPress={() => navigation.goBack()}>
+        <Text style={styles.ButtonText}>Return</Text>
+    </TouchableOpacity>
     </View>
   );
 }
@@ -148,23 +135,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
   },
-  successText: {
-    fontSize: 18,
-    color: 'green',
-    marginVertical: 10,
-  },
   waitingText: {
     fontSize: 18,
     color: 'orange',
     marginVertical: 10,
   },
-  gameCode: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: 'blue',
-    marginVertical: 10,
-  },
-  returnButton: {
+  Button: {
     marginTop: 20,
     paddingVertical: 15,
     paddingHorizontal: 30,
@@ -173,15 +149,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  returnButtonText: {
+  ButtonText: {
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
-  },
-  infoText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
-    color: '#555',
   },
 });

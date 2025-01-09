@@ -6,8 +6,7 @@ import CreateGameScreen from './createGameScreen';
 import GameScreen from './gameScreen';
 import Home from './home';
 import JoinGame from './joinGame';
-
-
+import WaitingRoom from './waitingRoom';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +19,8 @@ export default function App() {
         <Stack.Screen name="CreateGameScreen" component={CreateGameScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="JoinGame" component={JoinGame} options={{ headerShown: false }}/>
         <Stack.Screen name="GameScreen" component={GameScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="WaitingRoom" component={WaitingRoom} options={{ headerShown: false }}/>
+        <Stack.Screen name="HotToPlay" component={WaitingRoom} options={{ headerShown: false }}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
