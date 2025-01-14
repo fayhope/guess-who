@@ -2,7 +2,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import background from './background.jpg';
 import { db } from './firebaseConfig';
 
 export default function JoinGame({ navigation }) {
@@ -10,6 +11,7 @@ export default function JoinGame({ navigation }) {
   const [players, setPlayers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const isFocused = useIsFocused();
+  const [playerName, setPlayerName] = useState('');
 
   useEffect(() => {
     const checkGameStatus = async () => {
@@ -72,25 +74,25 @@ export default function JoinGame({ navigation }) {
       };
 
       const updatedPlayers = [...gameData.players, newPlayer];
-
+      const playerId = auth.currentUser.uid;
       // Update the game with the new player
       await updateDoc(doc(db, 'games', gameDoc.id), { players: updatedPlayers });
       console.log('Player joined', updatedPlayers.length);
-
       // Redirect to the Waiting Room
+      setIsLoading(false);
       navigation.navigate('WaitingRoom', {
         gameCode: enteredCode,
         gameId: gameDoc.id,
-        playerName: newPlayer.playerId, // Placeholder for player name
+        playerId: playerId,
       });
     } else {
       Alert.alert('Error', 'Invalid game code');
     }
-    setIsLoading(false);
   };
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source = {background} resizeMode='cover' style={styles.background}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Join a Game</Text>
 
       <TextInput
@@ -100,6 +102,12 @@ export default function JoinGame({ navigation }) {
         onChangeText={setEnteredCode}
         maxLength={6}
       />
+        <TextInput
+        style={styles.input}
+        placeholder="Nickname"
+        maxLength={12}
+        value={playerName}
+      />
     {isLoading && <Text>Loading Game...</Text>}
     <TouchableOpacity style={styles.Button} onPress={() => handleJoinGame() }>
         <Text style={styles.ButtonText}>Join Game</Text>
@@ -107,7 +115,8 @@ export default function JoinGame({ navigation }) {
     <TouchableOpacity style={styles.Button} onPress={() => navigation.goBack()}>
         <Text style={styles.ButtonText}>Return</Text>
     </TouchableOpacity>
-    </View>
+    </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -117,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+
   },
   title: {
     fontSize: 24,
@@ -129,11 +138,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 8,
     width: '80%',
     marginBottom: 20,
     textAlign: 'center',
     fontSize: 18,
+    backgroundColor: "#FFFFFF"
   },
   waitingText: {
     fontSize: 18,
@@ -153,5 +163,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });

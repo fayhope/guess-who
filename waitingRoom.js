@@ -1,12 +1,14 @@
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import background from './background.jpg';
 import { db } from './firebaseConfig';
 
 export default function WaitingRoom({ route, navigation }) {
-  const { gameCode, gameId, selectedCharacters } = route.params;
+  const { gameCode, gameId, selectedCharacters = [] , playerId} = route.params;
   const [players, setPlayers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
 
   useEffect(() => {
     // Listen to game updates in real time
@@ -33,8 +35,7 @@ export default function WaitingRoom({ route, navigation }) {
     });
 
     return () => unsubscribe(); // Clean up the listener on unmount
-  }, [gameId, gameCode, selectedCharacters, navigation]);
-
+  }, [gameId, gameCode, selectedCharacters, navigation, playerId]);
   const handleStartGame = () => {
     if (players.length === 2) {
       // Start the game when both players have joined
@@ -42,7 +43,8 @@ export default function WaitingRoom({ route, navigation }) {
         gameCode,
         gridRows: 5,
         gridCols: 5,
-        gameID
+        gameId,
+        playerId,
       });
     } else {
       alert('Waiting for another player to join...');
@@ -50,6 +52,7 @@ export default function WaitingRoom({ route, navigation }) {
   };
 
   return (
+    <ImageBackground source = {background} resizeMode='cover' style={styles.background}>
     <View style={styles.container}>
       <Text style={styles.title}>Waiting for Players</Text>
       
@@ -82,6 +85,7 @@ export default function WaitingRoom({ route, navigation }) {
         <Text style={styles.returnButtonText}>Return</Text>
       </TouchableOpacity>
     </View>
+    </ImageBackground>
   );
 }
 
@@ -91,7 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
@@ -132,5 +135,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });

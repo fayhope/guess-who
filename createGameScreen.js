@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc, collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import background from './background.jpg';
 import CharacterSelectionModal from './characterSelectionModal';
 import { auth, db } from './firebaseConfig';
 
@@ -16,6 +17,7 @@ export default function CreateGameScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [gameId, setGameId] = useState(null);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
+  const [playerName, setPlayerName] = useState(null);
 
   useEffect(() => {
     const loadCharacters = async () => {
@@ -83,6 +85,11 @@ export default function CreateGameScreen({ navigation }) {
       return;
     }
 
+    try {
+      if (playerName) { 
+        await AsyncStorage.setItem("name", JSON.stringify(playerName)); 
+    } }catch {(error)}
+
     setIsLoading(true);
 
     try {
@@ -95,7 +102,8 @@ export default function CreateGameScreen({ navigation }) {
       if (!players.some(player => player.playerId === auth.currentUser.uid)) {
         const newPlayer = {
           playerId: auth.currentUser.uid,
-          turn: players.length, // Assign turn based on current player count
+          turn: players.length,
+          name: playerName,
         };
         players.push(newPlayer);
         await updateDoc(gameRef, { players });
@@ -110,7 +118,8 @@ export default function CreateGameScreen({ navigation }) {
       navigation.navigate('WaitingRoom', {
         gameCode,
         gameId,
-        selectedCharacters, // Pass selected characters to the Waiting Room
+        selectedCharacters,
+        playerId // Pass selected characters to the Waiting Room
       });
 
     } catch (error) {
@@ -121,8 +130,17 @@ export default function CreateGameScreen({ navigation }) {
   };
 
   return (
+    <ImageBackground source = {background} resizeMode='cover' style={styles.background}>
     <View style={styles.container}>
-      <Text style={styles.title}>Create a New Game</Text>
+      <Text style={styles.title}>Create a</Text>
+      <Text style={styles.title}>New Game</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nickname"
+        maxLength={12}
+        value={playerName}
+      />
 
       {!loadingCharacters && (
         <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
@@ -134,8 +152,8 @@ export default function CreateGameScreen({ navigation }) {
         <Text style={styles.buttonText}>{isLoading ? 'Starting Game...' : 'Start'}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.returnButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.returnButtonText}>Return</Text>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
+        <Text style={styles.buttonText}>Return</Text>
       </TouchableOpacity>
 
       <CharacterSelectionModal
@@ -145,6 +163,7 @@ export default function CreateGameScreen({ navigation }) {
         onSelectCharacter={handleSelectCharacters}
       />
     </View>
+    </ImageBackground>
   );
 }
 
@@ -154,12 +173,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
+    fontSize: 50,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 0,
+    marginTop: 0,
+    color: '#FFFFFF' ,
+    textAlign: 'center',
+    textShadowColor: '#000000',
+    textShadowOffset: {width:3, height:7},
+    textShadowRadius: 10,
   },
   gameCodeText: {
     fontSize: 18,
@@ -192,19 +216,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  returnButton: {
-    marginTop: 30,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    backgroundColor: '#008CBA',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  returnButtonText: {
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 8,
+    width: '80%',
+    marginBottom: 20,
+    textAlign: 'center',
     fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold',
+    backgroundColor: '#FFFFFF',
+    marginTop: 20,
+  },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });

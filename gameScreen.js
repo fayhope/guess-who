@@ -7,10 +7,10 @@ import { db, liveDb } from './firebaseConfig';
 export default function GameScreen({ route, navigation }) {
   const { gameCode } = route.params; // Get game code passed from the previous screen
   const {gameId} = route.params; 
+  const {playerId} = route.params;
   const [game, setGame] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [playerId, setPlayerId] = useState(null);
   const [turn, setTurn] = useState(null); // 0 for Player 1, 1 for Player 2
   const [selectedCharacters, setSelectedCharacters] = useState([]);
   const [removeMode, setRemoveMode] = useState(false); // Toggle remove mode
@@ -156,6 +156,7 @@ export default function GameScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Text>Game Code: {gameCode}</Text>
+      <Text>{playerId}</Text>
       <Text>{gameId.turn === players.find(player => player.playerId === playerId)?.turn ? 'Your Turn' : 'Not Your Turn'}</Text>
       <Text>Selected Characters: {selectedCharacters.join(", ")}</Text>
 
@@ -164,7 +165,7 @@ export default function GameScreen({ route, navigation }) {
           <View key={player.playerId} style={styles.playerBoard}>
             <Text>{`Player ${player.turn + 1}'s Board:`}</Text>
             <FlatList
-              data={characters}
+              data={selectedCharacters}
               renderItem={({ item }) => (
                 <View style={styles.characterRow}>
                   <Text>{item.name}</Text>
