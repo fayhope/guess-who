@@ -1,6 +1,7 @@
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { signInAnonymously as firebaseSignInAnonymously, getAuth, signInWithCustomToken } from "firebase/auth";
+import { getDatabase, onValue, ref, set, update } from 'firebase/database';
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -16,7 +17,34 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth= getAuth(app);
+const auth = getAuth(app);
+const liveDb = getDatabase(app);
 
-export { auth, db };
+// Renaming your custom function to avoid conflict with Firebase's function
+const customSignInAnonymously = async () => {
+  try {
+    const storedToken = await AsyncStorage.getItem('customToken');
+
+    if (storedToken) {
+      // Sign in with the custom token if it exists in AsyncStorage
+      console.log("User ID found in storage, signing in with custom token:", storedToken);
+      return await signInWithCustomToken(auth, storedToken);
+    } else {
+      // If no custom token, sign in anonymously and store the token
+      const userCredential = await firebaseSignInAnonymously(auth);
+      const token = await auth.currentUser.getIdToken();
+      
+      // Store the new token in AsyncStorage
+      await AsyncStorage.setItem('customToken', token);
+      
+      console.log("User signed in anonymously with new ID token:", token);
+      return userCredential;
+    }
+  } catch (error) {
+    console.error("Error signing in anonymously:", error);
+    throw error;
+  }
+};
+
+export { auth, customSignInAnonymously, db, liveDb, onValue, ref, set, update };
 

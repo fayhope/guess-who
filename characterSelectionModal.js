@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
-import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CharacterSelectionModal({ visible, onClose, characters, onSelectCharacter }) {
   const [selectedCharacters, setSelectedCharacters] = useState([]);
 
-  const handleSelect = (characterId) => {
-    setSelectedCharacters((prevSelected) =>
-      prevSelected.includes(characterId)
-        ? prevSelected.filter((id) => id !== characterId) // Deselect if already selected
-        : [...prevSelected, characterId] // Select if not already selected
-    );
+  const handleSelect = (character) => {
+    setSelectedCharacters((prevSelected) => {
+      const isSelected = prevSelected.some((item) => item.id === character.id);
+      const updatedSelection = isSelected
+        ? prevSelected.filter((item) => item.id !== character.id)
+        : [...prevSelected, { id: character.id, name: character.name, image: character.image }];
+      
+      console.log('Selected characters:', updatedSelection);  // Debugging line
+
+      return updatedSelection;
+    });
   };
 
   const handleSave = () => {
-    onSelectCharacter(selectedCharacters); // Pass selected characters to parent component
+    onSelectCharacter(selectedCharacters); // Pass selected characters (with name & image)
     onClose();
   };
 
@@ -25,18 +30,17 @@ export default function CharacterSelectionModal({ visible, onClose, characters, 
           <FlatList
             data={characters}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View
-                style={[
-                  styles.characterItem,
-                  selectedCharacters.includes(item.id) && styles.selectedCharacter, // Change row color if selected
-                ]}
-              >
-                <TouchableOpacity onPress={() => handleSelect(item.id)}>
-                  <Text style={styles.characterName}>{item.name}</Text>
+            renderItem={({ item }) => {
+              const isSelected = selectedCharacters.some((char) => char.id === item.id);
+              return (
+                <TouchableOpacity onPress={() => handleSelect(item)}>
+                  <View style={[styles.characterItem, isSelected && styles.selectedCharacter]}>
+                    <Image source={item.image} style={styles.characterImage} />
+                    <Text style={styles.characterName}>{item.name}</Text>
+                  </View>
                 </TouchableOpacity>
-              </View>
-            )}
+              );
+            }}
           />
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={handleSave}>
@@ -72,18 +76,23 @@ const styles = StyleSheet.create({
   },
   characterItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 5,
     paddingVertical: 10,
     paddingHorizontal: 15,
-    borderRadius: 8, // Optional for rounded corners
+    borderRadius: 8,
+  },
+  characterImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   characterName: {
     fontSize: 16,
   },
   selectedCharacter: {
-    backgroundColor: "#eeeee4", 
+    backgroundColor: "#eeeee4",
   },
   buttonContainer: {
     flexDirection: 'row',

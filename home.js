@@ -1,10 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import background from './background.jpg';
 
 export default function Home({ navigation }) {
   return (
+    <ImageBackground source = {background} resizeMode='cover' style={styles.background}>
     <View style={styles.container}>
-      <Text style={styles.title}>Guess Who - Your Friends Edition!</Text>
+      <Text style={styles.title}>Guess!</Text>
       <TouchableOpacity 
         style={styles.button}
         onPress={() => navigation.navigate('Characters')}
@@ -23,7 +25,14 @@ export default function Home({ navigation }) {
       >
         <Text style={styles.buttonText}>Join Game</Text>
       </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={() => navigation.navigate('JoinGame')}
+      >
+        <Text style={styles.buttonText}>How to Play</Text>
+      </TouchableOpacity>
     </View>
+    </ImageBackground>
   );
 }
 
@@ -33,14 +42,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f7f7f7',
+  },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 70,
     fontWeight: 'bold',
     marginBottom: 30,
     textAlign: 'center',
-    color: '#333',
+    color: '#FFFFFF',
+    textShadowColor: '#000000',
+    textShadowOffset: {width:7, height:7},
+    textShadowRadius: 10,
   },
   button: {
     width: '80%',
@@ -61,4 +76,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+
 });
