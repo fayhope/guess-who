@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Image, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Contacts from 'react-native-contacts';
 
 export default function Characters({ navigation }) {
@@ -13,24 +13,43 @@ export default function Characters({ navigation }) {
     useEffect(() => {
         loadCharacters();
     }, []);
+
     const linkContacts = async () => {
       try {
+        // Check permission for iOS
+        const permission = await Contacts.checkPermission();
+
+        if (permission === 'undefined') {
+          const newPermission = await Contacts.requestPermission();
+          if (newPermission !== 'authorized') {
+            Alert.alert('Permission Denied', 'Please enable contacts permission in settings.');
+            return;
+          }
+        } else if (permission !== 'authorized') {
+          Alert.alert('Permission Denied', 'Please enable contacts permission in settings.');
+          return;
+        }
+
+        // Get contacts if permission is granted
         const contacts = await Contacts.getAll();
         const newCharacters = contacts.map(contact => ({
-          id: Date.now().toString(),
-          name: contact.displayName,
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: contact.displayName || "Unknown",
           image: contact.image || null,
         }));
-        console.log("characters Linked");
-        
+
+        console.log("Characters Linked");
+
         const updatedCharacters = [...characters, ...newCharacters];
         setCharacters(updatedCharacters);
         saveCharacters(updatedCharacters);
-        
+
       } catch (error) {
-        alert("Cannot Link Contacts Now! Check Permissions and Try Again!");
+        Alert.alert("Error", "Cannot Link Contacts Now! Try Again Later.");
+        console.error("Error linking contacts:", error);
       }
     };
+
 
     const handleDeleteCharacter = async (id) => {
         const updatedCharacters = characters.filter((character) => character.id !== id);
