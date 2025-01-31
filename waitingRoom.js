@@ -5,7 +5,7 @@ import background from './background.jpg';
 import { db } from './firebaseConfig';
 
 export default function WaitingRoom({ route, navigation }) {
-  const { gameCode, gameId, selectedCharacters = [] , playerId} = route.params;
+  const { gameCode, gameId, selectedCharacters = [] , playerId, playerTurn} = route.params;
   const [players, setPlayers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,6 +30,7 @@ export default function WaitingRoom({ route, navigation }) {
         navigation.navigate('GameScreen', {
           gameCode,
           gameId,
+          playerTurn,
         });
       }
     });
@@ -41,10 +42,9 @@ export default function WaitingRoom({ route, navigation }) {
       // Start the game when both players have joined
       navigation.navigate('GameScreen', {
         gameCode,
-        gridRows: 5,
-        gridCols: 5,
         gameId,
         playerId,
+        playerTurn,
       });
     } else {
       alert('Waiting for another player to join...');

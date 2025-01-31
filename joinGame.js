@@ -12,6 +12,7 @@ export default function JoinGame({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const isFocused = useIsFocused();
   const [playerName, setPlayerName] = useState('');
+    const [playerTurn, setPlateTurn] = useState(1);
 
   useEffect(() => {
     const checkGameStatus = async () => {
@@ -84,6 +85,7 @@ export default function JoinGame({ navigation }) {
         gameCode: enteredCode,
         gameId: gameDoc.id,
         playerId: playerId,
+        playerTurn,
       });
     } else {
       Alert.alert('Error', 'Invalid game code');

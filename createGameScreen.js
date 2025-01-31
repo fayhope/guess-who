@@ -18,6 +18,7 @@ export default function CreateGameScreen({ navigation }) {
   const [gameId, setGameId] = useState(null);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
   const [playerName, setPlayerName] = useState(null);
+  const [playerTurn, setPlateTurn] = useState(0);
 
   useEffect(() => {
     const loadCharacters = async () => {
@@ -119,7 +120,8 @@ export default function CreateGameScreen({ navigation }) {
         gameCode,
         gameId,
         selectedCharacters,
-        playerId // Pass selected characters to the Waiting Room
+        playerId,
+        playerTurn,
       });
 
     } catch (error) {

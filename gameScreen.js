@@ -5,7 +5,7 @@ import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity } from 'reac
 import { db, liveDb } from './firebaseConfig';
 
 export default function GameScreen({ route, navigation }) {
-  const { gameCode, gameId, playerId } = route.params;
+  const { gameCode, gameId, playerId, playerTurn } = route.params;
 
   const [game, setGame] = useState(null);
   const [characters, setCharacters] = useState([]);
@@ -24,7 +24,7 @@ export default function GameScreen({ route, navigation }) {
           acc[character.id] = 1;
           return acc;
         }, {});
-        const boardRef = ref(liveDb, `liveGames/${gameId}/players/${player.playerId}/board`);
+        const boardRef = ref(liveDb, `liveGames/${gameId}/players/${playerTurn}/board`);
         set(boardRef, boards[player.playerId]);
       }
     });
